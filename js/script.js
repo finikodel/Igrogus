@@ -59,21 +59,16 @@ async function sendAction(actionType) {
     }
 }
 // Эта функция срабатывает при нажатии на лайк или дизлайк
-async function sendAction(type) {
-    const gameId = localStorage.getItem('igrogus_current_id');
+function sendAction(type) {
+    // Если ты передаешь 'like', а в базе 'likes', добавим 's' для порядка
+    const actionType = type === 'like' ? 'likes' : 'dislikes';
+    const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
     
-    // Отправляем запрос на сервер (server.py)
-    const response = await fetch('/api/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ game_id: gameId, action: type })
-    });
-
-    const data = await response.json();
+    // Ссылка на базу Firebase
+    const voteRef = db.ref('votes/' + gameId + '/' + actionType);
     
-    // Обновляем числа на странице без перезагрузки
-    document.getElementById('likeCount').innerText = data.likes;
-    document.getElementById('dislikeCount').innerText = data.dislikes;
+    // Увеличиваем счетчик в облаке
+    voteRef.transaction((current) => (current || 0) + 1);
 }
 
 // Эта функция должна запускаться при открытии страницы, чтобы подтянуть старые лайки из базы
