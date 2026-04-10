@@ -17,7 +17,14 @@
             transition: 0.3s;
         }
         .play-btn-big:hover { transform: scale(1.05); background: #218838; }
-        .fallback-banner { font-size: 100px; padding: 50px; background: #222; border-radius: 20px; display: none; }
+        
+        /* Кнопки лайков без лишних вложений */
+        .vote-btn {
+            color: white; border: none; padding: 10px 25px; border-radius: 10px; 
+            cursor: pointer; font-size: 18px; display: flex; align-items: center; gap: 8px;
+            transition: 0.2s;
+        }
+        .vote-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
@@ -33,101 +40,95 @@
         <h1 id="gameTitle" style="font-size: 40px; font-family: 'Montserrat';">Загрузка...</h1>
         
         <img id="gameBanner" src="" class="game-banner-large">
-        <div id="fallbackBanner" class="fallback-banner">🐥</div>
 
-        <div style="margin-top: 20px; font-size: 18px; color: #aaa;">
-            ★ 0.0 | 👍 0 | 👁️ 1
-        </div>
         <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-    <div style="font-size: 16px; color: #888; font-family: sans-serif;">
-        👁️ Просмотров: <span id="visitCount">0</span>
-    </div>
-    
-    <div style="display: flex; gap: 15px;">
-        <button onclick="sendAction('likes')" style="background: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 10px; cursor: pointer; font-size: 18px; display: flex; align-items: center; gap: 5px;">
-            <button onclick="handleVote('likes')">👍 <span id="likeCount">0</span></button>
-        </button>
-        
-        <button onclick="sendAction('dislikes')" style="background: #dc3545; color: white; border: none; padding: 10px 25px; border-radius: 10px; cursor: pointer; font-size: 18px; display: flex; align-items: center; gap: 5px;">
-           <button onclick="handleVote('dislikes')">👎 <span id="dislikeCount">0</span></button>
-        </button>
-    </div>
-</div>
+            <div style="font-size: 16px; color: #888; font-family: sans-serif;">
+                👁️ Просмотров: <span id="visitCount">0</span>
+            </div>
+            
+            <div style="display: flex; gap: 15px;">
+                <button class="vote-btn" style="background: #28a745;" onclick="sendAction('likes')">
+                    👍 <span id="likeCount">0</span>
+                </button>
+                
+                <button class="vote-btn" style="background: #dc3545;" onclick="sendAction('dislikes')">
+                    👎 <span id="dislikeCount">0</span>
+                </button>
+            </div>
+        </div>
 
         <button class="play-btn-big" onclick="location.href='games/game1.html'">▶ ИГРАТЬ</button>
 
         <div style="margin-top: 30px; display: flex; justify-content: center; gap: 15px;">
-            <button class="fav-btn" style="background: #333; color: white;" onclick="addToFav()">⭐ В мои игры</button>
-            <button class="fav-btn" style="background: #333; color: white;" onclick="document.documentElement.requestFullscreen()">⛶ Весь экран</button>
+            <button class="fav-btn" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; border:none; cursor:pointer;" onclick="addToFav()">⭐ В мои игры</button>
+            <button class="fav-btn" style="background: #333; color: white; padding: 10px 20px; border-radius: 8px; border:none; cursor:pointer;" onclick="document.documentElement.requestFullscreen()">⛶ Весь экран</button>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <script>
+        // 1. КОНФИГ И ИНИЦИАЛИЗАЦИЯ (СТРОГО В НАЧАЛЕ)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCaiVer7vvPxROA_K483XRB9Vc1gSpuNkU",
+            authDomain: "igrogus-522a6.firebaseapp.com",
+            databaseURL: "https://igrogus-522a6-default-rtdb.europe-west1.firebasedatabase.app/",
+            projectId: "igrogus-522a6",
+            storageBucket: "igrogus-522a6.appspot.com",
+            messagingSenderId: "128181578549",
+            appId: "1:128181578549:web:79cfd2717941d2553dfa7c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // 2. ФУНКЦИИ ЛОГИКИ
+        function sendAction(type) {
+            const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
+            const voteRef = db.ref('votes/' + gameId + '/' + type);
+            voteRef.transaction((current) => (current || 0) + 1);
+        }
+
+        function syncVotes() {
+            const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
+            
+            // Обновление лайков
+            db.ref('votes/' + gameId).on('value', (snapshot) => {
+                const data = snapshot.val() || { likes: 0, dislikes: 0 };
+                document.getElementById('likeCount').innerText = data.likes || 0;
+                document.getElementById('dislikeCount').innerText = data.dislikes || 0;
+            });
+
+            // Обновление просмотров (просто плюсуем при заходе)
+            const visitRef = db.ref('visits/' + gameId);
+            visitRef.transaction((current) => (current || 0) + 1);
+            visitRef.on('value', (snapshot) => {
+                document.getElementById('visitCount').innerText = snapshot.val() || 0;
+            });
+        }
+
         function addToFav() {
-            const name = localStorage.getItem('currentGameName');
+            const name = localStorage.getItem('igrogus_current_name');
             let favs = JSON.parse(localStorage.getItem('myGames')) || [];
-            if(!favs.includes(name)) {
+            if(name && !favs.includes(name)) {
                 favs.push(name);
                 localStorage.setItem('myGames', JSON.stringify(favs));
                 alert('Добавлено! ⭐');
             }
         }
-    document.addEventListener('DOMContentLoaded', () => {
-        const name = localStorage.getItem('selectedGameName');
-        const img = localStorage.getItem('selectedGameImg');
 
-        if (name) {
-            document.getElementById('gameTitle').innerText = name;
-            // Картинка тоже берется из корня
-            document.getElementById('gameBanner').src = img; 
-        }
-    });
+        // 3. ЗАПУСК ПРИ ЗАГРУЗКЕ
+        document.addEventListener('DOMContentLoaded', () => {
+            const name = localStorage.getItem('igrogus_current_name');
+            const img = localStorage.getItem('igrogus_current_img');
+
+            if (name) {
+                document.getElementById('gameTitle').innerText = name;
+                document.getElementById('gameBanner').src = img; 
+            }
+            syncVotes();
+        });
     </script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-<script>
-  // 1. Сначала вставь сюда весь код инициализации Firebase (тот, что с apiKey)
-  // ... (твой конфиг Firebase) ...
-
-  // 2. Функция для лайков
-  function sendAction(type) {
-      const voteType = (type === 'like') ? 'likes' : (type === 'dislike' ? 'dislikes' : type);
-      const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
-      const voteRef = db.ref('votes/' + gameId + '/' + voteType);
-      voteRef.transaction((current) => (current || 0) + 1);
-  }
-
-  // 3. Функция для отображения цифр
-  function syncVotes() {
-      const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
-      db.ref('votes/' + gameId).on('value', (snapshot) => {
-          const data = snapshot.val() || { likes: 0, dislikes: 0 };
-          if (document.getElementById('likeCount')) {
-              document.getElementById('likeCount').innerText = data.likes || 0;
-              document.getElementById('dislikeCount').innerText = data.dislikes || 0;
-          }
-      });
-  }
-
-  // Запускаем обновление цифр при загрузке
-  syncVotes();
-</script>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyCaiVer7vvPxROA_K483XRB9Vc1gSpuNkU",
-    authDomain: "igrogus-522a6.firebaseapp.com",
-    databaseURL: "https://igrogus-522a6-default-rtdb.europe-west1.firebasedatabase.app/",
-    projectId: "igrogus-522a6",
-    storageBucket: "igrogus-522a6.appspot.com",
-    messagingSenderId: "128181578549",
-    appId: "1:128181578549:web:79cfd2717941d2553dfa7c"
-  };
-
-  // Запуск
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
-</script>
 </body>
 </html>
