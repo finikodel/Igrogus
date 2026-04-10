@@ -29,21 +29,17 @@
         </section>
 
         <div class="game-grid" id="mainGrid">
-            
             <div class="game-card" onclick="goToGamePage('game1', 'Летучая птица', 'game1pic.png')">
-                <div class="card-label">Новая</div>
-                <div class="card-img-block">
-                    <img src="game1pic.png" class="card-img" alt="🐥" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                    <div class="fallback-emoji-card" style="display:none; height:140px; justify-content:center; align-items:center; font-size:50px; background:#222;">🐥</div>
-                </div>
-                <div class="card-info">
-                    <span class="game-title">Летучая птица</span>
-                    <div class="game-meta">
-                        <div class="stat-group"><span style="color:#ffc107">★</span> 0.0</div>
-                        <div class="stat-group">👁️ <span id="visits-game1">0</span></div>
-                    </div>
-                </div>
-            </div>
+    <img src="game1pic.png" alt="Game">
+    <div class="game-info">
+        <h3>Летучая птица</h3>
+        <div class="card-stats">
+            ★ <span id="rating-game1">0.0</span> | 
+            👍 <span id="likes-game1">0</span> | 
+            👁️ <span id="views-game1">0</span>
+        </div>
+    </div>
+</div>    </div>
 
         </div>
     </main>

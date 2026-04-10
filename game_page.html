@@ -84,11 +84,29 @@
         const db = firebase.database();
 
         // 2. ФУНКЦИИ ЛОГИКИ
-        function sendAction(type) {
-            const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
-            const voteRef = db.ref('votes/' + gameId + '/' + type);
-            voteRef.transaction((current) => (current || 0) + 1);
-        }
+       function sendAction(type) {
+    const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
+    const userVoted = localStorage.getItem('voted_' + gameId); // Проверяем, голосовал ли уже
+
+    // Если нажал то же самое — ничего не делаем
+    if (userVoted === type) return;
+
+    const updates = {};
+    
+    // Если игрок меняет решение (например, с лайка на дизлайк)
+    if (userVoted) {
+        // Убираем старый голос
+        updates['votes/' + gameId + '/' + userVoted] = firebase.database.ServerValue.increment(-1);
+    }
+
+    // Добавляем новый голос
+    updates['votes/' + gameId + '/' + type] = firebase.database.ServerValue.increment(1);
+
+    // Отправляем всё одним паком в Firebase
+    db.ref().update(updates).then(() => {
+        localStorage.setItem('voted_' + gameId, type); // Запоминаем выбор
+    });
+}
 
         function syncVotes() {
             const gameId = localStorage.getItem('igrogus_current_id') || 'game1';
