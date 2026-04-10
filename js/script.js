@@ -1,12 +1,10 @@
-// Функция перехода на страницу описания
 function goToGamePage(id, name, img) {
-    console.log("Переход к игре:", name);
-    // Сохраняем данные, чтобы вторая страница их подхватила
-    localStorage.setItem('selectedGameId', id);
-    localStorage.setItem('selectedGameName', name);
-    localStorage.setItem('selectedGameImg', img);
+    // Сохраняем данные в память браузера
+    localStorage.setItem('igrogus_current_id', id);
+    localStorage.setItem('igrogus_current_name', name);
+    localStorage.setItem('igrogus_current_img', img);
     
-    // Переходим
+    // Переходим на страницу игры
     window.location.href = 'game_page.html';
 }
 
