@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Igrogus | Описание игры</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .page-content { padding: 40px 5%; text-align: center; max-width: 800px; margin: 0 auto; }
+        .game-banner-large { width: 100%; border-radius: 20px; border: 2px solid #333; }
+        
+        .play-btn-big { 
+            background: #28a745; color: white; border: none; padding: 20px 80px; 
+            font-size: 26px; font-weight: 900; border-radius: 15px; cursor: pointer;
+            margin-top: 30px; box-shadow: 0 10px 30px rgba(40, 167, 69, 0.4);
+            transition: 0.3s;
+        }
+        .play-btn-big:hover { transform: scale(1.05); background: #218838; }
+        .fallback-banner { font-size: 100px; padding: 50px; background: #222; border-radius: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-block" onclick="location.href='index.html'" style="cursor:pointer;">
+            <img src="image_0.png" alt="🪿" class="main-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+            <span class="emoji-logo" style="display:none; font-size: 30px;">🪿</span>
+            <span class="logo-text">IGROGUS</span>
+        </div>
+    </header>
+
+    <div class="page-content">
+        <h1 id="gameTitle" style="font-size: 40px; font-family: 'Montserrat';">Загрузка...</h1>
+        
+        <img id="gameBanner" src="" class="game-banner-large">
+        <div id="fallbackBanner" class="fallback-banner">🐥</div>
+
+        <div style="margin-top: 20px; font-size: 18px; color: #aaa;">
+            ★ 0.0 | 👍 0 | 👁️ 1
+        </div>
+        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+    <div style="font-size: 16px; color: #888; font-family: sans-serif;">
+        👁️ Просмотров: <span id="visitCount">0</span>
+    </div>
+    
+    <div style="display: flex; gap: 15px;">
+        <button onclick="sendAction('likes')" style="background: #28a745; color: white; border: none; padding: 10px 25px; border-radius: 10px; cursor: pointer; font-size: 18px; display: flex; align-items: center; gap: 5px;">
+            👍 <span id="likeCount">0</span>
+        </button>
+        
+        <button onclick="sendAction('dislikes')" style="background: #dc3545; color: white; border: none; padding: 10px 25px; border-radius: 10px; cursor: pointer; font-size: 18px; display: flex; align-items: center; gap: 5px;">
+            👎 <span id="dislikeCount">0</span>
+        </button>
+    </div>
+</div>
+
+        <button class="play-btn-big" onclick="location.href='games/game1.html'">▶ ИГРАТЬ</button>
+
+        <div style="margin-top: 30px; display: flex; justify-content: center; gap: 15px;">
+            <button class="fav-btn" style="background: #333; color: white;" onclick="addToFav()">⭐ В мои игры</button>
+            <button class="fav-btn" style="background: #333; color: white;" onclick="document.documentElement.requestFullscreen()">⛶ Весь экран</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        function addToFav() {
+            const name = localStorage.getItem('currentGameName');
+            let favs = JSON.parse(localStorage.getItem('myGames')) || [];
+            if(!favs.includes(name)) {
+                favs.push(name);
+                localStorage.setItem('myGames', JSON.stringify(favs));
+                alert('Добавлено! ⭐');
+            }
+        }
+    document.addEventListener('DOMContentLoaded', () => {
+        const name = localStorage.getItem('selectedGameName');
+        const img = localStorage.getItem('selectedGameImg');
+
+        if (name) {
+            document.getElementById('gameTitle').innerText = name;
+            // Картинка тоже берется из корня
+            document.getElementById('gameBanner').src = img; 
+        }
+    });
+    </script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCaiVer7vvPxROA_K483XRB9Vc1gSpuNkU",
+    authDomain: "igrogus-522a6.firebaseapp.com",
+    databaseURL: "https://igrogus-522a6-default-rtdb.europe-west1.firebasedatabase.app/",
+    projectId: "igrogus-522a6",
+    storageBucket: "igrogus-522a6.appspot.com",
+    messagingSenderId: "128181578549",
+    appId: "1:128181578549:web:79cfd2717941d2553dfa7c"
+  };
+
+  // Запуск
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+</script>
+</body>
+</html>

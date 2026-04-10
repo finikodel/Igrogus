@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>Flappy Bird AI - Igrogus Web</title>
+    <style>
+        @font-face {
+            font-family: 'Pixel';
+            src: url('https://fonts.cdnfonts.com/s/29136/CommonPixel.woff') format('woff');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Pixel', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            /* ДОБАВЛЕНО: Запрещаем скролл и зум на телефонах */
+            touch-action: none; 
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            max-height: 800px;
+            aspect-ratio: 9 / 16;
+            background-color: #70c5ce;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            text-shadow: 3px 3px 0 #000;
+            z-index: 10;
+        }
+
+        .current-score { font-size: 60px; margin-top: 40px; }
+        .best-score { font-size: 20px; opacity: 0.8; }
+
+        #menu {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            color: white;
+            text-align: center;
+        }
+
+        /* ДОБАВЛЕНО: Группа кнопок для меню, чтобы красиво стояли друг под другом */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            margin: 15px;
+        }
+
+        .start-btn {
+            background: #e86101;
+            border: 4px solid #000;
+            padding: 12px 30px;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            image-rendering: pixelated;
+            font-family: 'Pixel';
+        }
+
+        /* ДОБАВЛЕНО: Кнопка выхода в меню из игры */
+        .exit-btn {
+            background: #5d2906;
+            border: 4px solid #000;
+            padding: 10px 20px;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            image-rendering: pixelated;
+            font-family: 'Pixel';
+        }
+
+        #ai-advice {
+            background: #fff;
+            color: #333;
+            border: 3px solid #000;
+            padding: 12px;
+            margin: 15px;
+            font-size: 14px;
+            max-width: 80%;
+            text-shadow: none;
+            border-radius: 8px;
+            display: none;
+            line-height: 1.4;
+        }
+
+        .loading-text:after {
+            content: '.';
+            animation: dots 1s steps(5, end) infinite;
+        }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } }
+        .hidden { display: none !important; }
+
+        /* ДОБАВЛЕНО: Кнопки СНАРУЖИ игры (полный экран и домик) */
+        .external-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        @media (max-width: 600px) {
+            .external-controls {
+                flex-direction: row; /* На телефонах выстраиваем в ряд */
+            }
+        }
+
+        .side-btn {
+            background: #ffc107;
+            border: 3px solid #000;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 22px;
+            border-radius: 10px;
+            box-shadow: 2px 2px 0px #000;
+            transition: transform 0.1s;
+        }
+        .side-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ДОБАВЛЕНО: Кнопки управления ВНЕ рамки самой игры (но поверх фона) -->
+<div class="external-controls">
+    <div class="side-btn" onclick="toggleFullScreen()" title="На весь экран">⛶</div>
+    <div class="side-btn" onclick="goToMenu()" title="На главную Igrogus">🏠</div>
+</div>
+
+<div id="game-wrapper">
+    <div id="ui-layer">
+        <div class="current-score" id="scoreDisplay">0</div>
+        <div class="best-score" id="bestDisplay">BEST: 0</div>
+    </div>
+
+    <div id="menu">
+        <h1 id="menuTitle" style="font-size: 42px; margin: 0;">FLAPPY</h1>
+        <p style="margin: 10px 0;">Уворачивайся от труб!</p>
+        
+        <!-- ДОБАВЛЕНО: Обернули кнопки в группу и добавили кнопку "В МЕНЮ" -->
+        <div class="btn-group">
+            <button class="start-btn" id="playBtn">ИГРАТЬ</button>
+            <button class="exit-btn hidden" id="exitBtn" onclick="goToMenu()">В МЕНЮ</button>
+        </div>
+
+        <div id="ai-advice"></div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+</div>
+
+<script>
+    const apiKey = ""; // Ключ API Gemini
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const bestDisplay = document.getElementById('bestDisplay');
+    const menu = document.getElementById('menu');
+    const playBtn = document.getElementById('playBtn');
+    const aiAdviceBox = document.getElementById('ai-advice');
+    
+    // ДОБАВЛЕНО: Получаем новые элементы для изменения
+    const exitBtn = document.getElementById('exitBtn');
+    const menuTitle = document.getElementById('menuTitle');
+
+    // Настройка размеров
+    canvas.width = 360;
+    canvas.height = 640;
+
+    // Загрузка спрайта
+    const birdImg = new Image();
+    birdImg.src = 'Flap.png'; 
+    let imgLoaded = false;
+    birdImg.onload = () => imgLoaded = true;
+
+    // Состояние игры
+    let gameState = 'MENU';
+    let score = 0;
+    let bestScore = localStorage.getItem('igrogus_flappy_best') || 0;
+    bestDisplay.innerText = `BEST: ${bestScore}`;
+    let pipes = [];
+    let frame = 0;
+    let groundX = 0;
+
+    // ОБНОВЛЕННЫЕ РАЗМЕРЫ (КВАДРАТНЫЕ)
+    const bird = {
+        x: 50, y: 300, w: 90, h: 90, 
+        velocity: 0, 
+        gravity: 0.22, // Немного уменьшил гравитацию для плавности
+        jump: -4.5,    // Немного уменьшил силу прыжка
+        rotation: 0
+    };
+
+    const pipeGap = 170; // Чуть увеличил просвет для баланса
+    const pipeWidth = 54;
+
+    // --- ДОБАВЛЕНО: Функции для внешних кнопок ---
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    }
+
+    function goToMenu() {
+        // Перенаправляем на страницу описания игры или главную
+        // Так как файл в папке games, выходим на уровень вверх
+        window.location.href = '../game_page.html'; 
+    }
+    // ---------------------------------------------
+
+    // --- Интеграция Gemini ---
+    async function fetchAIAdvice(currentScore, best) {
+        aiAdviceBox.style.display = 'block';
+        aiAdviceBox.innerHTML = '<span class="loading-text">ИИ анализирует полет</span>';
+        
+        const prompt = `Ты - ИИ-комментатор в игре Flappy Bird. Игрок только что проиграл со счетом ${currentScore}. Его рекорд: ${best}. 
+        Напиши короткую (одна фраза), очень разнообразную реакцию. 
+        Варианты стиля: 
+        1. Саркастичный (подшути над медлительностью).
+        2. Философский (о смысле падения).
+        3. Мотивирующий (как настоящий тренер).
+        4. Гневный (почему ты врезался в текстуру?!).
+        5. Странный (про куриные крылышки).
+        Используй русский язык.`;
+        
+        let retries = 0;
+        const callGemini = async () => {
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                return data.candidates?.[0]?.content?.parts?.[0]?.text;
+            } catch (err) {
+                if (retries < 3) {
+                    retries++;
+                    await new Promise(r => setTimeout(r, 1000 * retries));
+                    return callGemini();
+                }
+                return null;
+            }
+        };
+
+        const advice = await callGemini();
+        aiAdviceBox.innerText = advice || "Неплохо, но трубы оказались сильнее.";
+    }
+
+    function resetGame() {
+        bird.y = 300; bird.velocity = 0; bird.rotation = 0;
+        pipes = []; score = 0; frame = 0;
+        scoreDisplay.innerText = score;
+        gameState = 'PLAYING';
+        menu.classList.add('hidden');
+        aiAdviceBox.style.display = 'none';
+        
+        // ДОБАВЛЕНО: Прячем кнопку выхода при рестарте и меняем заголовок обратно
+        exitBtn.classList.add('hidden');
+        menuTitle.innerText = "FLAPPY";
+    }
+
+    function gameOver() {
+        gameState = 'GAMEOVER';
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem('igrogus_flappy_best', bestScore);
+            bestDisplay.innerText = `BEST: ${bestScore}`;
+        }
+        menu.classList.remove('hidden');
+        
+        // ДОБАВЛЕНО: Показываем кнопку "В МЕНЮ" и меняем надпись
+        exitBtn.classList.remove('hidden');
+        menuTitle.innerText = "КОНЕЦ!";
+        
+        fetchAIAdvice(score, bestScore);
+    }
+
+    function drawBird() {
+        ctx.save();
+        ctx.translate(bird.x + bird.w/2, bird.y + bird.h/2);
+        
+        // ПЛАВНОЕ ВРАЩЕНИЕ
+        let targetRotation = 0;
+        if (bird.velocity > 0) {
+            targetRotation = Math.min(Math.PI / 2.5, bird.velocity * 0.15);
+        } else {
+            targetRotation = -0.3;
+        }
+        // Линейная интерполяция для плавности поворота
+        bird.rotation += (targetRotation - bird.rotation) * 0.2;
+        
+        ctx.rotate(bird.rotation);
+
+        if (imgLoaded) {
+            ctx.drawImage(birdImg, -bird.w/2, -bird.h/2, bird.w, bird.h);
+        } else {
+            // Улучшенная квадратная курица (Fallback)
+            // Тело
+            ctx.fillStyle = '#fce205';
+            ctx.fillRect(-bird.w/2, -bird.h/2, bird.w, bird.h);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-bird.w/2, -bird.h/2, bird.w, bird.h);
+            // Клюв
+            ctx.fillStyle = '#f39c12';
+            ctx.fillRect(bird.w/2 - 10, -5, 12, 12);
+            ctx.strokeRect(bird.w/2 - 10, -5, 12, 12);
+            // Глаз
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(4, -12, 12, 12);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(10, -9, 4, 4);
+            // Гребень
+            ctx.fillStyle = '#e74c3c';
+            ctx.fillRect(-6, -bird.h/2 - 4, 14, 10);
+        }
+        ctx.restore();
+    }
+
+    function drawPipe(x, y, h, isTop) {
+        ctx.fillStyle = '#73bf2e';
+        ctx.fillRect(x, y, pipeWidth, h);
+        ctx.fillStyle = '#b1f274'; // Блик
+        ctx.fillRect(x + 4, y, 6, h);
+        ctx.fillStyle = '#558022'; // Тень
+        ctx.fillRect(x + pipeWidth - 10, y, 6, h);
+        
+        // Ободок
+        const headH = 24;
+        const headW = pipeWidth + 8;
+        const headX = x - 4;
+        const headY = isTop ? (y + h - headH) : y;
+        ctx.fillStyle = '#73bf2e';
+        ctx.fillRect(headX, headY, headW, headH);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(headX, headY, headW, headH);
+        ctx.strokeRect(x, y, pipeWidth, h);
+    }
+
+    function drawGround() {
+        const groundY = canvas.height - 90;
+        // Коричневая земля
+        ctx.fillStyle = '#5d2906';
+        ctx.fillRect(0, groundY, canvas.width, 90);
+        // Трава
+        ctx.fillStyle = '#4caf50';
+        ctx.fillRect(0, groundY, canvas.width, 12);
+        // Текстура земли
+        ctx.fillStyle = '#3d1a03';
+        for(let i=0; i<12; i++) {
+            let x = (i * 40 + groundX) % (canvas.width + 40) - 40;
+            ctx.fillRect(x, groundY + 30, 8, 4);
+            ctx.fillRect(x + 20, groundY + 60, 4, 4);
+        }
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-5, groundY, canvas.width + 10, 95);
+    }
+
+    function update() {
+        if (gameState !== 'PLAYING') return;
+
+        frame++;
+        groundX = (groundX - 2.5) % 40;
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+
+        if (frame % 100 === 0) {
+            let topH = Math.random() * (canvas.height - 300) + 50;
+            pipes.push({ x: canvas.width, top: topH, passed: false });
+        }
+
+        for (let i = pipes.length - 1; i >= 0; i--) {
+            let p = pipes[i];
+            p.x -= 2.5;
+
+            // Коллизии
+            if (bird.x + bird.w - 6 > p.x && bird.x + 6 < p.x + pipeWidth) {
+                if (bird.y + 6 < p.top || bird.y + bird.h - 6 > p.top + pipeGap) {
+                    gameOver();
+                }
+            }
+
+            if (!p.passed && p.x + pipeWidth < bird.x) {
+                score++;
+                scoreDisplay.innerText = score;
+                p.passed = true;
+            }
+            if (p.x < -pipeWidth) pipes.splice(i, 1);
+        }
+
+        if (bird.y + bird.h > canvas.height - 90 || bird.y < -50) gameOver();
+    }
+
+    function loop() {
+        ctx.fillStyle = '#70c5ce';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        pipes.forEach(p => {
+            drawPipe(p.x, 0, p.top, true);
+            drawPipe(p.x, p.top + pipeGap, canvas.height - 90 - (p.top + pipeGap), false);
+        });
+        
+        drawGround();
+        drawBird();
+        update();
+        requestAnimationFrame(loop);
+    }
+
+    function jump() { 
+        if (gameState === 'PLAYING') {
+            bird.velocity = bird.jump; 
+        }
+    }
+
+    window.addEventListener('keydown', (e) => { if(e.code === 'Space') jump(); });
+    canvas.addEventListener('mousedown', (e) => { if(gameState === 'PLAYING') jump(); });
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(gameState === 'PLAYING') jump(); });
+    playBtn.addEventListener('click', (e) => { e.stopPropagation(); resetGame(); });
+
+    loop();
+</script>
+</body>
+</html>

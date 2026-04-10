@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGROGUS | Главная</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <header>
+        <div class="logo-block" onclick="location.href='index.html'">
+            <img src="image_0.png" alt="🪿" class="main-logo" id="mainLogo" onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block'">
+            <div id="logoFallback" class="emoji-logo" style="display:none; font-size: 30px;">🪿</div>
+            <span class="logo-text">IGROGUS</span>
+        </div>
+        <nav>
+            <button class="fav-btn" onclick="openFavoritesModal()">
+                <span>⭐</span> Мои игры
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        <section class="welcome-box">
+            <h1>Игры Онлайн Бесплатно</h1>
+            <p>Приветствуем тебя на игровом портале Igrogus! Здесь ты найдешь свои любимые самодельные игры. Выбирай карточку и жми играть!</p>
+        </section>
+
+        <div class="game-grid" id="mainGrid">
+            
+            <div class="game-card" onclick="goToGamePage('game1', 'Летучая птица', 'game1pic.png')">
+                <div class="card-label">Новая</div>
+                <div class="card-img-block">
+                    <img src="game1pic.png" class="card-img" alt="🐥" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                    <div class="fallback-emoji-card" style="display:none; height:140px; justify-content:center; align-items:center; font-size:50px; background:#222;">🐥</div>
+                </div>
+                <div class="card-info">
+                    <span class="game-title">Летучая птица</span>
+                    <div class="game-meta">
+                        <div class="stat-group"><span style="color:#ffc107">★</span> 0.0</div>
+                        <div class="stat-group">👁️ <span id="visits-game1">0</span></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="favModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeFavoritesModal()">&times;</span>
+            <h2 style="margin-bottom:20px;">⭐ Мои любимые игры</h2>
+            <div id="favoritesList">
+                </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
